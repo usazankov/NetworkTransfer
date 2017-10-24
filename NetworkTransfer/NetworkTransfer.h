@@ -5,10 +5,10 @@
 #ifndef __ADDINNATIVE_H__
 #define __ADDINNATIVE_H__
 
-#include <ComponentBase.h>
-#include "AddInDefBase.h"
-#include "IMemoryManager.h"
-
+#include <../include/ComponentBase.h>
+#include "../include/AddInDefBase.h"
+#include "../include/IMemoryManager.h"
+#include "Server.h"
 ///////////////////////////////////////////////////////////////////////////////
 // class NetworkTransfer
 class NetworkTransfer : public IComponentBase
@@ -22,8 +22,11 @@ public:
 	enum Methods
 	{
 		eVersion = 0,       // Версия Компоненты
-		eGetImageFragment,  // ПолучитьФрагментИзображения
-
+		eStartServer,		// СтартоватьСервер
+		eStopServer,		// ОстановитьСервер
+		eIsThereData,		// ЕстьЛиДанные
+		eReadData,			// СчитатьДанные
+		
 		eMethLast           // Always last
 	};
 
@@ -62,7 +65,7 @@ private:
 	long findName(wchar_t* names[], const wchar_t* name, const uint32_t size) const;
 	void addError(uint32_t wcode, const wchar_t* source,
 		const wchar_t* descriptor, long code);
-
+	Server * server;
 	// добавление ошибки в Предприятие в момент вызова функции компоненты
 	void addError(const wchar_t* errorText);
 

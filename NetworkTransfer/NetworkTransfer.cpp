@@ -35,11 +35,17 @@ static wchar_t *g_PropNamesRu[] = { L"" };
 
 static wchar_t *g_MethodNamesRu[] = {
 	L"Версия",
+	L"СтартоватьСервер",
+	L"ОстановитьСервер",
+	L"ЕстьЛиДанные",
 	L"СчитатьДанные"
 };
 
 static wchar_t *g_MethodNames[] = {
 	L"Version",
+	L"StartServer",
+	L"StopServer",
+	L"IsThereData",
 	L"ReadData"
 };
 
@@ -56,14 +62,10 @@ std::wstring replace(std::wstring text, std::wstring s, std::wstring d);
 
 const wchar_t* kComponentVersion = L"1.1.1.1.1";
 
-const wchar_t* kErrMsg_NoImagePath = L"No image path";
-const wchar_t* kErrMsg_NoMFCPath = L"No path to application";
-const wchar_t* kErrMsg_NoResultPath = L"No result path";
-
-const wchar_t* kErrMsg_LoadImage = L"Error loading image";
-const wchar_t* kErrMsg_Timeout = L"Error timeout expired";
-const wchar_t* kErrMsg_InternalError = L"Internal error";   // любые внутренние ошибка кода компоненты
-const wchar_t* kErrMsg_NoPicturePaths = L"No picture paths";
+const wchar_t* kErrMsg_UndErrorToStart = L"Error to start: Undefined Error";
+const wchar_t* kErrMsg_UndErrorToStop = L"Error to stop: Undefined Error";
+const wchar_t* kErrMsg_ErrorToCallIsThereData = L"Error to call IsThereData: Undefined Error";
+const wchar_t* kErrMsg_ErrorToReadData = L"Error to read data: Undefined Error";
 
 //---------------------------------------------------------------------------//
 extern "C" Q_DECL_EXPORT long GetClassObject(const WCHAR_T* wsName, IComponentBase** pInterface)
@@ -112,10 +114,12 @@ NetworkTransfer::NetworkTransfer()
 {
 	m_iMemory = 0;
 	m_iConnect = 0;
+	server = new Server(7046);
 }
 //---------------------------------------------------------------------------//
 NetworkTransfer::~NetworkTransfer()
 {
+	delete server;
 }
 //---------------------------------------------------------------------------//
 bool NetworkTransfer::Init(void* pConnection)
@@ -285,8 +289,14 @@ long NetworkTransfer::GetNParams(const long lMethodNum)
 	{
 	case eVersion:
 		return 0;
-	case eGetImageFragment:
-		return 7;
+	case eReadData:
+		return 0;
+	case eStartServer:
+		return 0;
+	case eStopServer:
+		return 0;
+	case eIsThereData:
+		return 0;
 	default:
 		return 0;
 	}
@@ -302,7 +312,10 @@ bool NetworkTransfer::GetParamDefValue(const long lMethodNum, const long lParamN
 	switch (lMethodNum)
 	{
 	case eVersion:
-	case eGetImageFragment:
+	case eReadData:
+	case eStartServer:
+	case eStopServer:
+	case eIsThereData:
 		// There are no parameter values by default 
 		break;
 	default:
@@ -318,7 +331,13 @@ bool NetworkTransfer::HasRetVal(const long lMethodNum)
 	{
 	case eVersion:
 		return true;
-	case eGetImageFragment:
+	case eReadData:
+		return true;
+	case eIsThereData:
+		return true;
+	case eStartServer:
+		return true;
+	case eStopServer:
 		return true;
 	default:
 		return false;
@@ -333,7 +352,7 @@ bool NetworkTransfer::CallAsProc(const long lMethodNum,
 	switch (lMethodNum)
 	{
 	case eVersion:
-	case eGetImageFragment:
+	case eReadData:
 		break;
 
 	default:
@@ -357,7 +376,8 @@ bool NetworkTransfer::CallAsFunc(const long lMethodNum,
 			size_t strLen = wcslen(kComponentVersion);
 			if (m_iMemory->AllocMemory((void**)&pvarRetValue->pwstrVal, (strLen + 1) * sizeof(kComponentVersion[0])))
 			{
-				wcscpy_s(pvarRetValue->pwstrVal, strLen + 1, kComponentVersion);
+				//wcscpy_s(pvarRetValue->pwstrVal, strLen + 1, kComponentVersion);
+				memcpy(pvarRetValue->pwstrVal, kComponentVersion, strLen + 1);
 				pvarRetValue->wstrLen = strLen;
 				TV_VT(pvarRetValue) = VTYPE_PWSTR;
 			}
@@ -365,60 +385,112 @@ bool NetworkTransfer::CallAsFunc(const long lMethodNum,
 
 		break;
 	}
-
-	// ѕолучить‘рагмент»зображени¤(ѕуть ‘айлу»зображени¤,
-	//  ѕуть ‘айлу–езультата, ѕоложение‘рагмента(„исло), —мещениеѕоX(„исло - мм), 
-	//  —мещениеѕоY(„исло - мм), Ўирина(„исло-мм), ¬ысота(„исло-мм)) 
-	case eGetImageFragment:
+	case eStartServer:
+		if (pvarRetValue == NULL)
+		{
+			break;
+		}
+		pvarRetValue->vt = VTYPE_BOOL;
+		pvarRetValue->bVal = 0;
+		if (server) 
+		{
+			
+			if (server->start()) 
+			{
+				pvarRetValue->bVal = 1;
+			}
+			else
+			{
+				if (server->isError())
+				{
+					wchar_t* str_t = NULL;
+					server->errorMessage().toWCharArray(str_t);
+					addError(str_t);
+				}
+				else
+				{
+					addError(kErrMsg_UndErrorToStart);
+				}
+			}
+		}
+		else 
+		{
+			addError(kErrMsg_UndErrorToStart);
+		}
+		break;
+	case eStopServer:
+		if (pvarRetValue == NULL)
+		{
+			break;
+		}
+		pvarRetValue->vt = VTYPE_BOOL;
+		pvarRetValue->bVal = 0;
+		if (server)
+		{
+			if (server->stop())
+			{
+				pvarRetValue->bVal = 1;
+			}
+			else 
+			{
+				if (server->isError())
+				{
+					wchar_t* str_t = NULL;
+					server->errorMessage().toWCharArray(str_t);
+					addError(str_t);
+				}
+				else
+				{
+					addError(kErrMsg_UndErrorToStop);
+				}
+			}
+		}
+		else
+		{
+			addError(kErrMsg_UndErrorToStop);
+		}
+		break;
+	case eIsThereData:
+		if (pvarRetValue == NULL)
+		{
+			break;
+		}
+		pvarRetValue->vt = VTYPE_BOOL;
+		pvarRetValue->bVal = 0;
+		if (server)
+		{
+			if (server->dataIsNotNull()) 
+			{
+				pvarRetValue->bVal = 1;
+			}
+		}
+		else 
+		{
+			addError(kErrMsg_ErrorToCallIsThereData);
+		}
+		break;
+	case eReadData:
 	{
-		// парам 0 - строка с путем к исходной картинке
-		tVariant& pParam0 = paParams[0];
-
-		wchar_t* sourcePath = pParam0.pwstrVal;
-		uint32_t sourcePathLen = pParam0.wstrLen;
-		if (sourcePathLen == 0)
+		if (pvarRetValue == NULL)
 		{
-			addError(kErrMsg_NoPicturePaths);
-			return false;
+			break;
 		}
-
-		// парам 1 - строка с путем картинки-результата
-		tVariant& pParam1 = paParams[1];
-		wchar_t* resultPath = pParam1.pwstrVal;
-		uint32_t resultPathLen = pParam1.wstrLen;
-		if (resultPathLen == 0)
+		if (server)
 		{
-			addError(kErrMsg_NoPicturePaths);
-			return false;
+			wchar_t* str_t = NULL;
+			size_t strLen = server->readData().toWCharArray(str_t);
+			if (m_iMemory->AllocMemory((void**)&pvarRetValue->pwstrVal, (strLen + 1) * sizeof(str_t[0])))
+			{
+				//wcscpy_s(pvarRetValue->pwstrVal, strLen + 1, str_t);
+				memcpy(pvarRetValue->pwstrVal, str_t, strLen + 1);
+				pvarRetValue->wstrLen = strLen;
+				TV_VT(pvarRetValue) = VTYPE_PWSTR;
+			}
 		}
-
-		// парам 2 - ѕоложение‘рагмента
-		tVariant& pParam2 = paParams[2];
-		int fragmentPos = pParam2.intVal;
-
-		// парам 3 - —мещениеѕоX
-		tVariant& pParam3 = paParams[3];
-		int offsetX = pParam3.intVal;
-
-		// парам 4 - —мещениеѕоY
-		tVariant& pParam4 = paParams[4];
-		int offsetY = pParam4.intVal;
-
-		// парам 5 - Ўирина
-		tVariant& pParam5 = paParams[5];
-		int width = pParam5.intVal;
-
-		// парам 6 - ¬ысота
-		tVariant& pParam6 = paParams[6];
-		int height = pParam6.intVal;
-
-		// если указан угол  - то ширина и высота считаем фиксированными - 55 и 45 мм.
-
-		bool saveRet = true;
-
-		TV_VT(pvarRetValue) = VTYPE_BOOL;
-		pvarRetValue->bVal = saveRet;
-
+		else 
+		{
+			addError(kErrMsg_ErrorToReadData);
+		}
 		break;
 	}
 
@@ -600,38 +672,6 @@ uint32_t getLenShortWcharStr(const WCHAR_T* Source)
 	return res;
 }
 
-//---------------------------------------------------------------------------//
-/*int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
-{
-	UINT  num = 0;          // number of image encoders
-	UINT  size = 0;         // size of the image encoder array in bytes
-
-	ImageCodecInfo* pImageCodecInfo = NULL;
-
-	GetImageEncodersSize(&num, &size);
-	if (size == 0)
-		return -1;  // Failure
-
-	pImageCodecInfo = (ImageCodecInfo*)(malloc(size));
-	if (pImageCodecInfo == NULL)
-		return -1;  // Failure
-
-	GetImageEncoders(num, size, pImageCodecInfo);
-
-	for (UINT j = 0; j < num; ++j)
-	{
-		if (wcscmp(pImageCodecInfo[j].MimeType, format) == 0)
-		{
-			*pClsid = pImageCodecInfo[j].Clsid;
-			free(pImageCodecInfo);
-			return j;  // Success
-		}
-	}
-
-	free(pImageCodecInfo);
-	return -1;  // Failure
-}*/
-
 std::wstring replace(std::wstring text, std::wstring s, std::wstring d)
 {
 	for (unsigned index = 0; index = text.find(s, index), index != std::wstring::npos;)
@@ -641,135 +681,3 @@ std::wstring replace(std::wstring text, std::wstring s, std::wstring d)
 	}
 	return text;
 }
-
-const int defWidthMM = 55; // 55 мм
-const int defHeightMM = 45; // 45 мм
-
-							//---------------------------------------------------------------------------//
-/*bool NetworkTransfer::GetImageFragment(wchar_t* sourcePath, wchar_t* resultPath, int fragmentPos,
-	int left, int top, int width, int height)
-{
-	wchar_t drive[_MAX_DRIVE];
-	wchar_t dir[_MAX_DIR];
-	wchar_t fname[_MAX_FNAME];
-	wchar_t ext[_MAX_EXT];
-	_wsplitpath_s(resultPath, drive, _MAX_DRIVE, dir, _MAX_DIR, fname, _MAX_FNAME, ext, _MAX_EXT);
-
-	FragmentPosition fragPos = (FragmentPosition)fragmentPos;
-
-	// Initialize GDI+
-	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-	Gdiplus::GdiplusStartup(&m_gdiplusToken, &gdiplusStartupInput, NULL);
-
-	// Get the CLSID of the PNG encoder.
-	CLSID   encoderClsid;
-
-	if (_wcsicmp(ext, L".bmp") == 0)
-		GetEncoderClsid(L"image/bmp", &encoderClsid);
-	else if (_wcsicmp(ext, L".jpg") == 0)
-		GetEncoderClsid(L"image/jpeg", &encoderClsid);
-	else if (_wcsicmp(ext, L".gif") == 0)
-		GetEncoderClsid(L"image/gif", &encoderClsid);
-	else if (_wcsicmp(ext, L".png") == 0)
-		GetEncoderClsid(L"image/png", &encoderClsid);
-	else if (_wcsicmp(ext, L".tif") == 0)
-		GetEncoderClsid(L"image/tiff", &encoderClsid);
-
-	Bitmap bitmap(sourcePath);
-
-	int imageWidth = bitmap.GetWidth();
-	int imageHeight = bitmap.GetHeight();
-
-	REAL xDPI = bitmap.GetHorizontalResolution();
-	REAL yDPI = bitmap.GetVerticalResolution();
-
-	const REAL inchMM = 25.4f;
-
-	int defWidth = (int)((REAL)defWidthMM / inchMM * xDPI + 0.5f); // в пиксел¤х
-	int defHeight = (int)((REAL)defHeightMM / inchMM * yDPI + 0.5f); // в пиксел¤х
-
-																	 // если указан угол  - то ширина и высота считаем фиксированными - 45 и 25 мм.
-	switch (fragPos)
-	{
-	case eLeftTop:
-	{
-		width = defWidth;
-		height = defHeight;
-		left = 0;
-		top = 0;
-		break;
-	}
-
-	case eLeftBottom:
-	{
-		width = defWidth;
-		height = defHeight;
-		left = 0;
-		top = imageHeight - height;
-		break;
-	}
-
-	case eRightTop:
-	{
-		width = defWidth;
-		height = defHeight;
-		left = imageWidth - width;
-		top = 0;
-		break;
-	}
-
-	case eRightBottom:
-	{
-		width = defWidth;
-		height = defHeight;
-		left = imageWidth - width;
-		top = imageHeight - height;
-		break;
-	}
-
-	case ePrecisePosition:
-	{
-		left = (int)((REAL)left / inchMM * xDPI + 0.5f); // в пиксел¤х
-		top = (int)((REAL)top / inchMM * xDPI + 0.5f); // в пиксел¤х
-		width = (int)((REAL)width / inchMM * xDPI + 0.5f); // в пиксел¤х
-		height = (int)((REAL)height / inchMM * xDPI + 0.5f); // в пиксел¤х
-
-		if (left < 0)
-			left = 0;
-		if (top < 0)
-			top = 0;
-
-		if (left > imageWidth)
-			left = imageWidth;
-		if (top > imageHeight)
-			top = imageHeight;
-
-		if (width > imageWidth)
-			width = imageWidth;
-		if (height > imageHeight)
-			height = imageHeight;
-
-		if (left + width > imageWidth)
-			left = imageWidth - width;
-		if (top + height > imageHeight)
-			top = imageHeight - height;
-
-		break;
-	}
-
-	default:
-		return false;
-	}
-
-	RectF sourceRect((REAL)left, (REAL)top, (REAL)width, (REAL)height);
-	Status stat;
-
-	Bitmap* secondBitmap = bitmap.Clone(sourceRect, PixelFormatDontCare);
-	stat = secondBitmap->Save(resultPath, &encoderClsid, NULL);
-
-	delete secondBitmap;
-
-	Gdiplus::GdiplusShutdown(m_gdiplusToken);
-
-	return true;
-}*/
