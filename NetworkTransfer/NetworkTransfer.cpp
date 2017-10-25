@@ -60,7 +60,7 @@ std::wstring replace(std::wstring text, std::wstring s, std::wstring d);
 
 //---------------------------------------------------------------------------//
 
-const wchar_t* kComponentVersion = L"1.1.1.1.1";
+const wchar_t* kComponentVersion = L"0.0.0.1";
 
 const wchar_t* kErrMsg_UndErrorToStart = L"Error to start: Undefined Error";
 const wchar_t* kErrMsg_UndErrorToStop = L"Error to stop: Undefined Error";
@@ -114,7 +114,7 @@ NetworkTransfer::NetworkTransfer()
 {
 	m_iMemory = 0;
 	m_iConnect = 0;
-	server = new Server(7046);
+	server = new Server(7635);
 }
 //---------------------------------------------------------------------------//
 NetworkTransfer::~NetworkTransfer()
@@ -376,8 +376,8 @@ bool NetworkTransfer::CallAsFunc(const long lMethodNum,
 			size_t strLen = wcslen(kComponentVersion);
 			if (m_iMemory->AllocMemory((void**)&pvarRetValue->pwstrVal, (strLen + 1) * sizeof(kComponentVersion[0])))
 			{
-				//wcscpy_s(pvarRetValue->pwstrVal, strLen + 1, kComponentVersion);
-				memcpy(pvarRetValue->pwstrVal, kComponentVersion, strLen + 1);
+				wcscpy_s(pvarRetValue->pwstrVal, strLen + 1, kComponentVersion);
+				//memcpy(pvarRetValue->pwstrVal, kComponentVersion, strLen + 1);
 				pvarRetValue->wstrLen = strLen;
 				TV_VT(pvarRetValue) = VTYPE_PWSTR;
 			}
@@ -475,16 +475,22 @@ bool NetworkTransfer::CallAsFunc(const long lMethodNum,
 		{
 			break;
 		}
+		TV_VT(pvarRetValue) = VTYPE_PWSTR;
+		pvarRetValue->wstrLen = 0;
 		if (server)
 		{
 			wchar_t* str_t = NULL;
-			size_t strLen = server->readData().toWCharArray(str_t);
-			if (m_iMemory->AllocMemory((void**)&pvarRetValue->pwstrVal, (strLen + 1) * sizeof(str_t[0])))
-			{
-				//wcscpy_s(pvarRetValue->pwstrVal, strLen + 1, str_t);
-				memcpy(pvarRetValue->pwstrVal, str_t, strLen + 1);
-				pvarRetValue->wstrLen = strLen;
-				TV_VT(pvarRetValue) = VTYPE_PWSTR;
+			if(server->dataIsNotNull()){
+				size_t strLen = server->readData().toWCharArray(str_t);
+				if(strLen != 0)
+				{
+					if (m_iMemory->AllocMemory((void**)&pvarRetValue->pwstrVal, (strLen + 1) * sizeof(str_t[0])))
+					{
+						wcscpy_s(pvarRetValue->pwstrVal, strLen + 1, str_t);
+						//memcpy(pvarRetValue->pwstrVal, str_t, strLen + 1);
+						pvarRetValue->wstrLen = strLen;
+					}
+				}
 			}
 		}
 		else 
