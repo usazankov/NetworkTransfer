@@ -7,6 +7,7 @@
 #include <QtCore\qdatastream.h>
 #include <QTime>
 #include <QQueue>
+#include <qprocess.h>
 
 class Server : public QObject
 {
@@ -20,6 +21,7 @@ public:
 	bool isError()const;
 	bool start();
 	bool stop();
+	bool waitForConnect(int ms);
 	virtual ~Server();
 private:
 	QTcpServer *serv;
@@ -29,9 +31,11 @@ private:
 	void sendToClient(QTcpSocket* pSocket, const QString& str);
 	QString errorMes;
 	bool error;
+	QProcess* m_process;
 public slots:
 	void slotNewConnection();
 	void slotReadClient();
+	void slotDataOnStdout();
 signals:
 	void test();
 };

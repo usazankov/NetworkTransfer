@@ -9,6 +9,7 @@
 #include "../include/AddInDefBase.h"
 #include "../include/IMemoryManager.h"
 #include "Server.h"
+
 ///////////////////////////////////////////////////////////////////////////////
 // class NetworkTransfer
 class NetworkTransfer : public IComponentBase
@@ -26,7 +27,7 @@ public:
 		eStopServer,		// ќстановить—ервер
 		eIsThereData,		// ≈стьЋиƒанные
 		eReadData,			// —читатьƒанные
-		
+		eWaitForConnect,	// ќжидание¬ход€щего—оединени€
 		eMethLast           // Always last
 	};
 

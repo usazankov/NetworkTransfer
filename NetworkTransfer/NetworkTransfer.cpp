@@ -38,7 +38,8 @@ static wchar_t *g_MethodNamesRu[] = {
 	L"—тартовать—ервер",
 	L"ќстановить—ервер",
 	L"≈стьЋиƒанные",
-	L"—читатьƒанные"
+	L"—читатьƒанные",
+	L"ќжидание¬ход€щего—оединени€"
 };
 
 static wchar_t *g_MethodNames[] = {
@@ -46,7 +47,8 @@ static wchar_t *g_MethodNames[] = {
 	L"StartServer",
 	L"StopServer",
 	L"IsThereData",
-	L"ReadData"
+	L"ReadData",
+	L"WaitForConnect"
 };
 
 
@@ -60,7 +62,7 @@ std::wstring replace(std::wstring text, std::wstring s, std::wstring d);
 
 //---------------------------------------------------------------------------//
 
-const wchar_t* kComponentVersion = L"0.0.0.1";
+const wchar_t* kComponentVersion = L"0.0.0.2";
 
 const wchar_t* kErrMsg_UndErrorToStart = L"Error to start: Undefined Error";
 const wchar_t* kErrMsg_UndErrorToStop = L"Error to stop: Undefined Error";
@@ -115,6 +117,7 @@ NetworkTransfer::NetworkTransfer()
 	m_iMemory = 0;
 	m_iConnect = 0;
 	server = new Server(7635);
+	
 }
 //---------------------------------------------------------------------------//
 NetworkTransfer::~NetworkTransfer()
@@ -297,6 +300,8 @@ long NetworkTransfer::GetNParams(const long lMethodNum)
 		return 0;
 	case eIsThereData:
 		return 0;
+	case eWaitForConnect:
+		return 1;
 	default:
 		return 0;
 	}
@@ -316,6 +321,7 @@ bool NetworkTransfer::GetParamDefValue(const long lMethodNum, const long lParamN
 	case eStartServer:
 	case eStopServer:
 	case eIsThereData:
+	case eWaitForConnect:
 		// There are no parameter values by default 
 		break;
 	default:
@@ -338,6 +344,8 @@ bool NetworkTransfer::HasRetVal(const long lMethodNum)
 	case eStartServer:
 		return true;
 	case eStopServer:
+		return true;
+	case eWaitForConnect:
 		return true;
 	default:
 		return false;
@@ -374,6 +382,7 @@ bool NetworkTransfer::CallAsFunc(const long lMethodNum,
 		if (pvarRetValue)
 		{
 			size_t strLen = wcslen(kComponentVersion);
+			qDebug() << "strLen=" << strLen;
 			if (m_iMemory->AllocMemory((void**)&pvarRetValue->pwstrVal, (strLen + 1) * sizeof(kComponentVersion[0])))
 			{
 				wcscpy_s(pvarRetValue->pwstrVal, strLen + 1, kComponentVersion);
@@ -392,9 +401,9 @@ bool NetworkTransfer::CallAsFunc(const long lMethodNum,
 		}
 		pvarRetValue->vt = VTYPE_BOOL;
 		pvarRetValue->bVal = 0;
+
 		if (server) 
 		{
-			
 			if (server->start()) 
 			{
 				pvarRetValue->bVal = 1;
@@ -479,18 +488,28 @@ bool NetworkTransfer::CallAsFunc(const long lMethodNum,
 		pvarRetValue->wstrLen = 0;
 		if (server)
 		{
-			wchar_t* str_t = NULL;
+			
 			if(server->dataIsNotNull()){
-				size_t strLen = server->readData().toWCharArray(str_t);
-				if(strLen != 0)
+				qDebug() << "if(server->dataIsNotNull()){";
+				QString d = server->readData();
+				
+				wchar_t* str_t = (wchar_t*)malloc((d.size() + 1) * sizeof(wchar_t));
+				d.toWCharArray(str_t);
+				str_t[d.size() * sizeof(wchar_t)] = L'\0';
+				qDebug() << "wcslen" << wcslen(str_t);
+				size_t strSize = wcslen(str_t);
+				if(d.size() != 0)
 				{
-					if (m_iMemory->AllocMemory((void**)&pvarRetValue->pwstrVal, (strLen + 1) * sizeof(str_t[0])))
+					if (m_iMemory->AllocMemory((void**)&pvarRetValue->pwstrVal, (strSize + 1) * sizeof(str_t[0])))
 					{
-						wcscpy_s(pvarRetValue->pwstrVal, strLen + 1, str_t);
+						qDebug() << "if (m_iMemory->AllocMemory((void**)&pvarRetValue->pwstrVal, (strLen + 1) * sizeof(str_t[0])))";
+						wcscpy_s(pvarRetValue->pwstrVal, strSize + 1, str_t);
+						qDebug() << "wcscpy_s(pvarRetValue->pwstrVal, strLen + 1, str_t);";
 						//memcpy(pvarRetValue->pwstrVal, str_t, strLen + 1);
-						pvarRetValue->wstrLen = strLen;
+						pvarRetValue->wstrLen = d.size();
 					}
 				}
+				free(str_t);
 			}
 		}
 		else 
@@ -499,7 +518,17 @@ bool NetworkTransfer::CallAsFunc(const long lMethodNum,
 		}
 		break;
 	}
-
+	case eWaitForConnect:
+	{
+		if (pvarRetValue == NULL)
+		{
+			break;
+		}
+		tVariant& pParam0 = paParams[0];
+		pvarRetValue->vt = VTYPE_BOOL;
+		pvarRetValue->bVal = server->waitForConnect(pParam0.intVal);
+		break;
+	}
 	default:
 		return false;
 	}
