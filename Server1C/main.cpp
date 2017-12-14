@@ -18,13 +18,13 @@ int main(int argc, char** argv)
 	QCoreApplication::setEventDispatcher(new QEventDispatcherEpoll);
 #endif
 	QCoreApplication app(argc, argv);
-	QCoreApplication::setApplicationName("QtSocks");
+	QCoreApplication::setApplicationName("1CServerQt");
 	QCoreApplication::setApplicationVersion("0.1");
 
 	qRegisterMetaType<qintptr>("qintptr");
 
 	QCommandLineParser parser;
-	parser.setApplicationDescription("Multi-threaded SOCKS4 server on Qt");
+	parser.setApplicationDescription("Multi-threaded server on Qt");
 	parser.addHelpOption();
 	parser.addVersionOption();
 

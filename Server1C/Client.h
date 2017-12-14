@@ -1,7 +1,8 @@
 #pragma once
 
 #include <QtCore/QObject>
-
+#include <QQueue>
+#include <QDataStream>
 #include <QtNetwork/QTcpSocket>
 
 class Client : public QObject
@@ -25,12 +26,11 @@ public:
 	void onWorldDisconnected();
 
 private:
-
+	quint16 m_nNextBlockSize;
 	void done();
 
 private:
-
+	QQueue<QString> dat;
 	QTcpSocket m_client;
-	QTcpSocket m_world;
 };
 
