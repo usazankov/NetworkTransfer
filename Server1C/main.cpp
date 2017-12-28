@@ -1,7 +1,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QCommandLineOption>
-
+#include <iostream>
 #include "Server.h"
 
 #ifdef ENABLE_EPOOL
@@ -20,7 +20,7 @@ int main(int argc, char** argv)
 	QCoreApplication app(argc, argv);
 	QCoreApplication::setApplicationName("1CServerQt");
 	QCoreApplication::setApplicationVersion("0.1");
-
+	std::cout << "Started\n";
 	qRegisterMetaType<qintptr>("qintptr");
 
 	QCommandLineParser parser;
@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 		qCritical() << server.errorString();
 		exit(1);
 	}
-
+	
 	qDebug() << "Run server on" << port << "threads" << threads;
 	return app.exec();
 }

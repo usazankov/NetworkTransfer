@@ -1,13 +1,11 @@
 #pragma once
 
 #include <QObject>
-#include <QtNetwork\qtcpserver.h>
-#include <QtNetwork\qtcpsocket.h>
 #include <QtCore\qdebug.h>
 #include <QtCore\qdatastream.h>
 #include <QTime>
-#include <QQueue>
 #include <qprocess.h>
+#include <QtSql>
 
 class Server : public QObject
 {
@@ -21,20 +19,13 @@ public:
 	bool isError()const;
 	bool start();
 	bool stop();
-	bool waitForConnect(int ms);
 	virtual ~Server();
 private:
-	QTcpServer *serv;
-	quint16 m_nNextBlockSize;
-	quint16 port;
-	QQueue<QString> dat;
-	void sendToClient(QTcpSocket* pSocket, const QString& str);
 	QString errorMes;
 	bool error;
+	QSqlDatabase dbase;
 	QProcess* m_process;
 public slots:
-	void slotNewConnection();
-	void slotReadClient();
 	void slotDataOnStdout();
 signals:
 	void test();

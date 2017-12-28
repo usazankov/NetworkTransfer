@@ -4,6 +4,7 @@
 #include <QQueue>
 #include <QDataStream>
 #include <QtNetwork/QTcpSocket>
+#include "Storage.h"
 
 class Client : public QObject
 {
@@ -13,24 +14,16 @@ public:
 
 	Client(qintptr socketDescriptor, QObject* parent = 0);
 
-	public slots:
-
+public slots:
 	void onRequest();
-
-	void client2world();
-	void world2client();
-
-	void sendSocksAnsver();
-
+	void sendToClient(QTcpSocket* pSocket, const QString& str);
 	void onClientDisconnected();
-	void onWorldDisconnected();
 
 private:
 	quint16 m_nNextBlockSize;
 	void done();
 
 private:
-	QQueue<QString> dat;
 	QTcpSocket m_client;
 };
 

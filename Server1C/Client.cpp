@@ -20,7 +20,6 @@ Client::Client(qintptr socketDescriptor, QObject* parent) :
 
 void Client::onRequest()
 {
-	qDebug() << "void Server::slotReadClient()";
 	m_nNextBlockSize = 0;
 	QTcpSocket* m_client = (QTcpSocket*)sender();
 	QDataStream in(m_client);
@@ -29,44 +28,41 @@ void Client::onRequest()
 	{
 		if (!m_nNextBlockSize)
 		{
-			qDebug() << "if (!m_nNextBlockSize)";
 			if (m_client->bytesAvailable() < sizeof(quint16))
 			{
-				qDebug() << "if (pClientSocket->bytesAvailable() < sizeof(quint16))";
-				qDebug() << m_client->bytesAvailable();
 				break;
 			}
 			in >> m_nNextBlockSize;
-			qDebug() << "in >> m_nNextBlockSize;";
-			qDebug() << m_nNextBlockSize;
 		}
 		if (m_client->bytesAvailable() < m_nNextBlockSize)
 		{
-			qDebug() << m_client->bytesAvailable();
-			qDebug() << "if (pClientSocket->bytesAvailable() < m_nNextBlockSize)";
 			break;
 		}
 		QString str;
 		in >> str;
-		qDebug() << "str:";
 		qDebug() << str;
-		dat.enqueue(str);
+		Storage::instance()->addString(str);
 		m_nNextBlockSize = 0;
-		//sendToClient(pClientSocket,
-		//	"Server Response: Received \"" + str + "\""
-		//);
+		sendToClient(m_client,
+			"Server Response: Received \"" + str + "\""
+		);
 	}
 
 }
 
-void Client::sendSocksAnsver()
+void Client::sendToClient(QTcpSocket * pSocket, const QString & str)
 {
-	
+	QByteArray arrBlock;
+	QDataStream out(&arrBlock, QIODevice::WriteOnly);
+	out.setVersion(QDataStream::Qt_4_5);
+	out << quint16(0) << str;
+	out.device()->seek(0);
+	out << quint16(arrBlock.size() - sizeof(quint16));
+	pSocket->write(arrBlock);
 }
 
 void Client::onClientDisconnected()
 {
-
 	done();
 }
 

@@ -526,7 +526,7 @@ bool NetworkTransfer::CallAsFunc(const long lMethodNum,
 		}
 		tVariant& pParam0 = paParams[0];
 		pvarRetValue->vt = VTYPE_BOOL;
-		pvarRetValue->bVal = server->waitForConnect(pParam0.intVal);
+		pvarRetValue->bVal = 0;
 		break;
 	}
 	default:
